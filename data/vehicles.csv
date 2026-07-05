@@ -1,0 +1,4 @@
+id,name,capacity_kg,max_distance_km,start_lat,start_lon
+1,Veiculo 1,260,95,-23.5505,-46.6333
+2,Veiculo 2,220,85,-23.5505,-46.6333
+3,Veiculo 3,180,75,-23.5505,-46.6333
