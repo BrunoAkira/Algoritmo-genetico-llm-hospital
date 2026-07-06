@@ -1,284 +1,141 @@
-# Arquitetura do Projeto - Sistema de Otimização de Rotas (VRP + Algoritmo Genético + LLM)
+# Arquitetura do Projeto - Sistema de Otimização de Rotas (VRP + Algoritmo Genético + LLM com Ollama)
 
-## Visão Geral
+## Objetivo
 
-O projeto é dividido em duas grandes camadas:
+O sistema utiliza um Algoritmo Genético para resolver um problema de
+roteamento de veículos (VRP), baseado no TSP, e utiliza uma LLM
+executada localmente via **Ollama** para gerar relatórios, instruções e
+responder perguntas em linguagem natural.
 
-1.  **Camada de Otimização (Algoritmo Genético)** -- responsável por
-    encontrar as melhores rotas.
-2.  **Camada de Inteligência (LLM)** -- responsável por interpretar os
-    resultados e gerar relatórios em linguagem natural.
-
-------------------------------------------------------------------------
-
-# Fluxo Geral
+## Fluxo Geral
 
 ``` text
 run.py
- │
- ├── Carrega arquivos CSV
- │
- ├── Cria objetos de Entregas e Veículos
- │
- ├── Executa o Algoritmo Genético
- │
- ├── Calcula o Fitness das soluções
- │
- ├── Seleção → Crossover → Mutação
- │
- ├── Obtém a melhor solução
- │
- ├── Gera outputs/
- │      ├── routes.json
- │      ├── routes_map.html
- │      ├── fitness_evolution.png
- │      ├── report.md
- │      └── driver_instructions.md
- │
- └── Ask
+   │
+   ├── Carrega dados (CSV)
+   │
+   ├── Executa o Algoritmo Genético
+   │      ├── Seleção
+   │      ├── Crossover
+   │      ├── Mutação
+   │      └── Fitness
+   │
+   ├── Melhor solução
+   │
+   ├── Gera:
+   │      ├── outputs/routes.json
+   │      ├── outputs/routes_map.html
+   │      ├── outputs/fitness_evolution.png
+   │      ├── outputs/report.md
+   │      └── outputs/driver_instructions.md
+   │
+   └── (Opcional)
+          ↓
+     python llm_report.py
+          ↓
+      prompts.py
+          ↓
+      llm_service.py
+          ↓
+        Ollama
+          ↓
+      Modelo Llama 3.2
+          ↓
+   outputs/llm_report.md
+   outputs/llm_driver_instructions.md
+
+Perguntas em linguagem natural
+
+python ask.py --llm "Pergunta"
+
         ↓
-      LLM
+
+routes.json
         ↓
-      Relatórios inteligentes
-```
-
-------------------------------------------------------------------------
-
-# Responsabilidade de cada arquivo
-
-## run.py
-
-Arquivo principal do sistema.
-
-Responsabilidades:
-
--   carregar dados;
--   iniciar o algoritmo genético;
--   gerar os arquivos de saída;
--   coordenar todo o fluxo.
-
-------------------------------------------------------------------------
-
-## src/data_loader.py
-
-Responsável pela leitura dos arquivos CSV.
-
-Entrada:
-
--   deliveries.csv
--   vehicles.csv
-
-Saída:
-
--   objetos utilizados pelo algoritmo.
-
-------------------------------------------------------------------------
-
-## src/models.py
-
-Define os modelos do domínio.
-
-Exemplos:
-
--   Delivery
--   Vehicle
--   Route
-
-------------------------------------------------------------------------
-
-## src/distance.py
-
-Calcula a distância entre os pontos da rota.
-
-É utilizado pelo Fitness.
-
-------------------------------------------------------------------------
-
-## src/fitness.py
-
-Calcula o custo da solução.
-
-Exemplo conceitual:
-
-    fitness =
-        distância_total
-      + penalidade_capacidade
-      + penalidade_autonomia
-      + penalidade_prioridade
-      + penalidade_atraso
-
-Quanto menor o fitness, melhor a solução.
-
-------------------------------------------------------------------------
-
-## src/genetic_algorithm.py
-
-Núcleo do projeto.
-
-Executa:
-
--   população inicial;
--   seleção;
--   crossover;
--   mutação;
--   elitismo;
--   evolução das gerações.
-
-------------------------------------------------------------------------
-
-## src/map_visualizer.py
-
-Responsável por gerar:
-
-    outputs/routes_map.html
-
-Biblioteca utilizada:
-
--   Folium
-
-------------------------------------------------------------------------
-
-## src/chart_generator.py
-
-Responsável por gerar:
-
-    outputs/fitness_evolution.png
-
-Biblioteca utilizada:
-
--   Matplotlib
-
-------------------------------------------------------------------------
-
-## src/report_generator.py
-
-Gera os relatórios básicos do sistema.
-
-Exemplo:
-
--   report.md
--   driver_instructions.md
-
-------------------------------------------------------------------------
-
-## outputs/routes.json
-
-Arquivo mais importante do sistema.
-
-Contém:
-
--   rotas;
--   veículos;
--   distância;
--   carga;
--   prioridades;
--   métricas.
-
-É utilizado posteriormente pela LLM.
-
-------------------------------------------------------------------------
-
-# Funcionamento do Algoritmo Genético
-
-``` text
-Criar população inicial
-        ↓
-Calcular Fitness
-        ↓
-Selecionar pais
-        ↓
-Aplicar Crossover
-        ↓
-Aplicar Mutação
-        ↓
-Gerar nova população
-        ↓
-Repetir por N gerações
-        ↓
-Melhor solução encontrada
-```
-
-------------------------------------------------------------------------
-
-# Fluxo da LLM
-
-A LLM não calcula a rota.
-
-Ela interpreta o resultado produzido pelo Algoritmo Genético.
-
-Fluxo:
-
-``` text
-outputs/routes.json
+prompts.py
         ↓
 llm_service.py
         ↓
-Monta Prompt
+Ollama
         ↓
-OpenAI API
-        ↓
-Resposta
-        ↓
-Relatórios
+Resposta da LLM
 ```
 
-------------------------------------------------------------------------
+## Responsabilidade dos arquivos
 
-# Biblioteca utilizada na LLM
+### run.py
 
--   openai
--   python-dotenv
+Coordena toda a execução do sistema, desde a leitura dos dados até a
+geração dos artefatos.
 
-A biblioteca **openai** realiza a comunicação com o modelo de linguagem.
+### data_loader.py
 
-A biblioteca **python-dotenv** lê a chave da API armazenada no arquivo
-`.env`.
+Lê os arquivos CSV de entregas e veículos.
 
-------------------------------------------------------------------------
+### genetic_algorithm.py
 
-# Responsabilidades da LLM
+Implementa população inicial, seleção, crossover, mutação, elitismo e
+evolução das gerações.
 
-A LLM pode:
+### fitness.py
 
--   gerar instruções para motoristas;
--   produzir relatórios operacionais;
--   responder perguntas em linguagem natural;
--   sugerir melhorias logísticas;
--   explicar as decisões do algoritmo.
+Calcula o custo de cada solução considerando distância, prioridades,
+capacidade, autonomia e penalidades.
 
-Ela **não participa da otimização das rotas**.
+### map_visualizer.py
 
-------------------------------------------------------------------------
+Gera o mapa HTML utilizando Folium.
 
-# Resumo da Arquitetura
+### chart_generator.py
 
-``` text
-                 +----------------------+
-                 |      run.py          |
-                 +----------+-----------+
-                            |
-        +-------------------+------------------+
-        |                                      |
-        v                                      v
- Carrega Dados                        Algoritmo Genético
-(data_loader.py)                   (genetic_algorithm.py)
-                                               |
-                                               v
-                                          fitness.py
-                                               |
-                                               v
-                                    Melhor solução encontrada
-                                               |
-                  +----------------------------+----------------------------+
-                  |                             |                            |
-                  v                             v                            v
-          routes.json                 routes_map.html           fitness_evolution.png
-                  |
-                  v
-            LLM (OpenAI)
-                  |
-                  +-----------------------------+
-                  |                             |
-                  v                             v
-      Relatório Operacional         Instruções para Motoristas
-```
+Gera gráficos da evolução do fitness utilizando Matplotlib.
+
+### report_generator.py
+
+Gera os relatórios básicos do algoritmo (sem LLM).
+
+### llm/prompts.py
+
+Centraliza todos os prompts enviados para a LLM.
+
+### llm/llm_service.py
+
+Realiza a comunicação com o Ollama e abstrai as chamadas ao modelo Llama
+3.2.
+
+### llm_report.py
+
+Lê o arquivo routes.json, envia os dados para a LLM e gera: -
+llm_report.md - llm_driver_instructions.md
+
+### ask.py
+
+Permite fazer perguntas em linguagem natural sobre as rotas utilizando o
+Ollama.
+
+## Tecnologias
+
+-   Python 3.11
+-   Algoritmo Genético
+-   Folium
+-   Matplotlib
+-   Ollama
+-   Llama 3.2
+
+Toda a parte de LLM é executada localmente, sem utilização de APIs
+pagas.
+
+## Atendimento aos requisitos
+
+-   Algoritmo Genético para VRP
+-   Fitness com múltiplas restrições
+-   Prioridade de entregas
+-   Capacidade dos veículos
+-   Autonomia
+-   Múltiplos veículos
+-   Visualização em mapa
+-   Relatórios automáticos
+-   Instruções para motoristas com LLM
+-   Sugestões de melhoria com LLM
+-   Perguntas em linguagem natural utilizando uma LLM pré-treinada
+    executada localmente (Ollama).
