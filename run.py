@@ -5,7 +5,7 @@ from src.vrp_solver import VRPSolver
 from src.report_generator import build_routes_payload, save_routes_json, generate_markdown_report
 from src.map_visualizer import create_routes_map
 from src.charts import plot_fitness_history, plot_vehicle_distances, plot_priority_distribution
-from src.llm_service import LocalLLMService
+from src.llm_service import generate_ollama_outputs, generate_rule_based_driver_file
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,6 +18,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--elite-size", type=int, default=6, help="Quantidade de indivíduos preservados por elitismo.")
     parser.add_argument("--mutation-rate", type=float, default=0.30, help="Taxa de mutação por indivíduo.")
     parser.add_argument("--seed", type=int, default=42, help="Semente aleatória para reprodutibilidade.")
+    parser.add_argument("--use-llm", action="store_true", help="Gera relatórios com LLM local via Ollama.")
+    parser.add_argument("--llm-model", default="llama3.2", help="Modelo local do Ollama usado na geração dos textos.")
+    parser.add_argument("--ollama-url", default="http://localhost:11434", help="URL local da API do Ollama.")
     return parser.parse_args()
 
 
@@ -49,16 +52,18 @@ def main() -> None:
     plot_vehicle_distances(metrics, output_dir / "vehicle_distance.png")
     plot_priority_distribution(deliveries, output_dir / "priority_distribution.png")
 
-    llm = LocalLLMService()
-    with open(output_dir / "driver_instructions.md", "w", encoding="utf-8") as file:
-        file.write("# Instruções para Motoristas\n\n")
-        for route in payload["routes"]:
-            file.write(f"- {llm.generate_driver_instructions(route)}\n")
-        file.write("\n## Resumo operacional\n\n")
-        file.write(llm.generate_operations_summary(payload) + "\n")
-        file.write("\n## Sugestões de melhoria\n\n")
-        for suggestion in llm.suggest_improvements(payload):
-            file.write(f"- {suggestion}\n")
+    # Sempre gera um arquivo de instruções por regras para que o projeto funcione sem dependências externas.
+    generate_rule_based_driver_file(payload, output_dir / "driver_instructions.md")
+
+    if args.use_llm:
+        # Quando habilitado, este bloco atende ao requisito de utilizar uma LLM pré-treinada.
+        # A integração usa Ollama local, portanto não exige API paga nem chave da OpenAI.
+        generate_ollama_outputs(
+            payload=payload,
+            output_dir=output_dir,
+            model=args.llm_model,
+            base_url=args.ollama_url,
+        )
 
     print("Otimização concluída.")
     print(f"Custo total: {best_cost:.2f}")

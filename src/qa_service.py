@@ -1,17 +1,22 @@
 import json
 from pathlib import Path
 
+from src.llm_service import OllamaLLMService
+
 
 def load_payload(path: str | Path) -> dict:
-    """Carrega o resultado das rotas salvo em JSON."""
+    """Carrega o resultado das rotas salvo em JSON pelo run.py."""
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
 def answer_question(question: str, payload: dict) -> str:
-    """Responde perguntas simples em linguagem natural sobre as rotas geradas."""
+    """Responde perguntas simples por regras locais, sem usar uma LLM."""
     q = question.lower()
     routes = payload.get("routes", [])
+
+    if not routes:
+        return "Não há rotas disponíveis no arquivo informado."
 
     if "maior distância" in q or "maior distancia" in q or "mais distância" in q or "mais distancia" in q:
         route = max(routes, key=lambda item: item["distance_km"])
@@ -47,3 +52,9 @@ def answer_question(question: str, payload: dict) -> str:
         return f"O custo total da solução foi {payload.get('total_cost')}."
 
     return "Não encontrei uma resposta específica. Tente perguntar sobre distância, autonomia, capacidade, prioridade, atraso ou custo."
+
+
+def answer_question_with_llm(question: str, payload: dict, model: str = "llama3.2", base_url: str = "http://localhost:11434") -> str:
+    """Responde perguntas em linguagem natural usando uma LLM local servida pelo Ollama."""
+    service = OllamaLLMService(model=model, base_url=base_url)
+    return service.answer_question(payload, question)

@@ -21,11 +21,14 @@ def route_metrics(route: list[int], vehicle: Vehicle, deliveries_by_id: dict[int
 
     for delivery_id in route:
         delivery = deliveries_by_id[delivery_id]
+
+        # Cada trecho considera o deslocamento do ponto atual até a próxima entrega.
         leg_km = haversine_km(current_lat, current_lon, delivery.lat, delivery.lon)
         distance_km += leg_km
         elapsed_min += travel_time_minutes(leg_km)
         load_kg += delivery.demand_kg
 
+        # O atraso é ponderado pela prioridade: atrasar medicamento crítico custa mais.
         delay = max(0.0, elapsed_min - delivery.deadline_min)
         if delay > 0:
             late_deliveries += 1
@@ -35,6 +38,7 @@ def route_metrics(route: list[int], vehicle: Vehicle, deliveries_by_id: dict[int
         current_lat = delivery.lat
         current_lon = delivery.lon
 
+    # O veículo deve retornar para a base, característica importante do VRP.
     return_km = haversine_km(current_lat, current_lon, vehicle.start_lat, vehicle.start_lon)
     distance_km += return_km
     elapsed_min += travel_time_minutes(return_km)
@@ -62,6 +66,7 @@ def evaluate_individual(individual: list[list[int]], vehicles: list[Vehicle], de
         metric = route_metrics(route, vehicle, deliveries_by_id)
         metrics.append(metric)
         vehicle_used = 1 if route else 0
+        # O custo base é a distância, e as restrições entram como penalidades.
         total_cost += metric.distance_km
         total_cost += metric.capacity_excess_kg * PENALTY_CAPACITY
         total_cost += metric.autonomy_excess_km * PENALTY_AUTONOMY

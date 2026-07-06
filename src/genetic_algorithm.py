@@ -55,6 +55,7 @@ def order_crossover_sequence(parent_a: list[int], parent_b: list[int]) -> list[i
         return parent_a[:]
     start, end = sorted(random.sample(range(len(parent_a)), 2))
     child = [None] * len(parent_a)
+    # O trecho central vem do primeiro pai; o restante é preenchido na ordem do segundo pai.
     child[start:end] = parent_a[start:end]
     fill_values = [gene for gene in parent_b if gene not in child]
     fill_index = 0
@@ -72,6 +73,7 @@ def crossover(parent_a: Individual, parent_b: Individual, vehicle_count: int) ->
     child_sequence = order_crossover_sequence(seq_a, seq_b)
     sizes_a = [len(route) for route in parent_a]
     sizes_b = [len(route) for route in parent_b]
+    # Além da ordem das entregas, herdamos parcialmente a divisão entre veículos.
     child_sizes = [random.choice([a, b]) for a, b in zip(sizes_a, sizes_b)]
     return split_sequence(child_sequence, child_sizes, vehicle_count)
 
@@ -141,6 +143,7 @@ def repair_individual(individual: Individual, deliveries: list[Delivery]) -> Ind
 
 def evolve_population(population: list[Individual], vehicles: list[Vehicle], deliveries: list[Delivery], elite_size: int, mutation_rate: float) -> list[Individual]:
     """Gera uma nova população preservando elite e criando descendentes por crossover e mutação."""
+    # Elitismo: mantém as melhores soluções para não perder bons resultados entre gerações.
     ranked = sorted(population, key=lambda ind: evaluate_individual(ind, vehicles, deliveries)[0])
     next_population = [deepcopy(ind) for ind in ranked[:elite_size]]
     while len(next_population) < len(population):
@@ -148,6 +151,7 @@ def evolve_population(population: list[Individual], vehicles: list[Vehicle], del
         parent_b = tournament_selection(ranked, vehicles, deliveries)
         child = crossover(parent_a, parent_b, len(vehicles))
         child = mutate(child, mutation_rate)
+        # O reparo garante que nenhuma entrega seja perdida ou duplicada após crossover/mutação.
         child = repair_individual(child, deliveries)
         next_population.append(child)
     return next_population
