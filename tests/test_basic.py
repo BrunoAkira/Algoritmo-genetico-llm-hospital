@@ -4,7 +4,6 @@ from src.data_loader import load_deliveries, load_vehicles
 from src.fitness import evaluate_individual
 from src.genetic_algorithm import create_initial_individual, repair_individual, crossover, mutate
 from src.prompts import build_driver_instructions_prompt, build_operations_report_prompt, build_question_prompt
-from src.qa_service import answer_question
 from src.report_generator import build_routes_payload, save_routes_json
 from src.vrp_solver import VRPSolver
 
@@ -118,34 +117,6 @@ def test_prompts_contain_required_context():
     assert "Veículo 1" in question_prompt
 
 
-def test_local_question_answering():
-    """Valida o modo de perguntas sem LLM para garantir respostas locais úteis."""
-    payload = {
-        "total_cost": 100,
-        "routes": [
-            {
-                "vehicle_name": "Van 1",
-                "distance_km": 10,
-                "autonomy_excess_km": 0,
-                "capacity_excess_kg": 0,
-                "late_deliveries": 0,
-                "stops": [{"name": "Hospital A", "priority": 3}],
-            },
-            {
-                "vehicle_name": "Van 2",
-                "distance_km": 20,
-                "autonomy_excess_km": 2,
-                "capacity_excess_kg": 0,
-                "late_deliveries": 1,
-                "stops": [],
-            },
-        ],
-    }
-
-    assert "Van 2" in answer_question("Qual veículo percorreu a maior distância?", payload)
-    assert "Hospital A" in answer_question("Quais entregas críticas?", payload)
-    assert "Van 2" in answer_question("Alguma rota ultrapassou a autonomia?", payload)
-
 from src.baseline import build_nearest_neighbor_solution, generate_performance_comparison
 
 
@@ -193,41 +164,22 @@ def test_run_optimization_generates_main_outputs(tmp_path):
     assert (tmp_path / "performance_comparison.md").exists()
 
 
-def test_run_ask_about_routes_without_llm(tmp_path):
-    """Garante que o modo de perguntas centralizado no run.py funciona sem LLM."""
-    payload = {
-        "total_cost": 100,
-        "routes": [
-            {
-                "vehicle_name": "Van 1",
-                "distance_km": 12,
-                "autonomy_excess_km": 0,
-                "capacity_excess_kg": 0,
-                "late_deliveries": 0,
-                "stops": [],
-            },
-            {
-                "vehicle_name": "Van 2",
-                "distance_km": 30,
-                "autonomy_excess_km": 0,
-                "capacity_excess_kg": 0,
-                "late_deliveries": 0,
-                "stops": [],
-            },
-        ],
-    }
+def test_run_ask_about_routes_delegates_to_llm(tmp_path):
+    """Garante que perguntas em linguagem natural são delegadas para a LLM via run.py."""
+    payload = {"total_cost": 100, "routes": [{"vehicle_name": "Van 1", "distance_km": 12, "stops": []}]}
     output_file = tmp_path / "routes.json"
     save_routes_json(payload, output_file)
 
-    response = ask_about_routes(
-        question="Qual veículo percorreu a maior distância?",
-        routes_path=output_file,
-        use_llm=False,
-        model="llama3.2",
-        ollama_url="http://localhost:11434",
-    )
+    with patch("run.answer_question_with_llm", return_value="Resposta gerada pela LLM") as mocked_answer:
+        response = ask_about_routes(
+            question="Qual veículo percorreu a maior distância?",
+            routes_path=output_file,
+            model="llama3.2",
+            ollama_url="http://localhost:11434",
+        )
 
-    assert "Van 2" in response
+    assert response == "Resposta gerada pela LLM"
+    mocked_answer.assert_called_once()
 
 
 def test_run_llm_report_delegates_to_ollama_service(tmp_path):

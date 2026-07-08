@@ -22,7 +22,7 @@ A LLM não substitui o algoritmo de otimização. Ela recebe o resultado estrutu
         |                   |                    |
         v                   v                    v
   optimize              llm-report               ask
-  (AG + artefatos)      (relatórios LLM)         (perguntas)
+  (AG + artefatos)      (relatórios LLM)         (perguntas LLM)
         |                   |                    |
         v                   |                    |
 +------------------+        |                    |
@@ -64,25 +64,19 @@ A LLM não substitui o algoritmo de otimização. Ela recebe o resultado estrutu
              |              |                    |
              v              v                    v
         outputs/routes.json ----------------> qa_service.py
-             |                                |        |
-             |                                |        v
-             |                                |  resposta local
-             |                                |
-             v                                v
+             |                                         |
+             |                                         v
+             |                                  prompts.py
+             |                                         |
+             v                                         v
 +-------------------------+          +-------------------------+
-| Artefatos locais        |          | prompts.py              |
-| - routes_map.html       |          | monta prompts da LLM    |
+| Artefatos técnicos      |          | llm_service.py          |
+| - routes_map.html       |          | chamada HTTP ao Ollama  |
 | - gráficos PNG          |          +-----------+-------------+
 | - daily_report.md       |                      |
 | - driver_instructions.md|                      v
 | - performance_comparison|          +-------------------------+
-+-------------------------+          | llm_service.py          |
-                                     | chamada HTTP ao Ollama  |
-                                     +-----------+-------------+
-                                                 |
-                                                 v
-                                     +-------------------------+
-                                     | Ollama + Llama 3.2      |
++-------------------------+          | Ollama + Llama 3.2      |
                                      | execução local          |
                                      +-----------+-------------+
                                                  |
@@ -92,14 +86,13 @@ A LLM não substitui o algoritmo de otimização. Ela recebe o resultado estrutu
                                      | - llm_driver...md       |
                                      | - llm_operations...md   |
                                      | - llm_improvement...md  |
+                                     | - respostas no terminal |
                                      +-------------------------+
 ```
 
 ---
 
 ## Fluxos disponíveis no `run.py`
-
-O projeto foi centralizado em um único arquivo principal: `run.py`.
 
 ### 1. Otimização
 
@@ -128,7 +121,7 @@ Seleção, crossover, mutação e elitismo
         ↓
 Melhor solução
         ↓
-Mapa, gráficos, relatórios e routes.json
+Mapa, gráficos, relatórios técnicos e routes.json
 ```
 
 ---
@@ -150,7 +143,7 @@ Prompts
         ↓
 Ollama
         ↓
-Relatórios e instruções gerados pela LLM
+Relatórios, instruções e sugestões gerados pela LLM
 ```
 
 ---
@@ -165,19 +158,13 @@ Esse fluxo pressupõe que `outputs/routes.json` já foi gerado.
 
 ---
 
-### 4. Perguntas em linguagem natural
-
-Sem LLM:
+### 4. Perguntas em linguagem natural com LLM
 
 ```bash
-python run.py ask "Qual veículo percorreu a maior distância?"
+python run.py ask "Qual rota tem maior risco operacional?" --llm-model llama3.2
 ```
 
-Com LLM:
-
-```bash
-python run.py ask "Qual rota tem maior risco operacional?" --llm --llm-model llama3.2
-```
+Esse modo sempre usa a LLM local via Ollama. Não há perguntas por regras locais, pois o requisito do projeto pede uso de uma LLM pré-treinada.
 
 ---
 
@@ -187,14 +174,13 @@ python run.py ask "Qual rota tem maior risco operacional?" --llm --llm-model lla
 python run.py menu
 ```
 
-Fluxo para apresentação:
+O menu é um recurso de apresentação. Ele não é necessário para a execução automatizada, mas facilita demonstrar o sistema ao vivo.
 
 ```text
 1 - Executar Algoritmo Genético e gerar artefatos
 2 - Gerar relatórios com LLM local (Ollama)
-3 - Perguntar sobre as rotas sem LLM
-4 - Perguntar sobre as rotas com LLM local (Ollama)
-5 - Sair
+3 - Perguntar sobre as rotas com LLM local (Ollama)
+4 - Sair
 ```
 
 ---
@@ -215,7 +201,7 @@ Orquestra o uso do Algoritmo Genético para o problema de roteamento de veículo
 
 ### `src/report_generator.py`
 
-Gera relatórios determinísticos sem LLM e salva o `routes.json`.
+Gera relatórios determinísticos e salva o `routes.json`.
 
 ### `src/map_visualizer.py`
 
@@ -239,7 +225,7 @@ Faz a comunicação HTTP com o Ollama em `http://localhost:11434/api/generate`.
 
 ### `src/qa_service.py`
 
-Responde perguntas sobre as rotas por regras locais ou delega para a LLM.
+Carrega o `routes.json` e delega perguntas em linguagem natural para a LLM local.
 
 ---
 
@@ -258,9 +244,3 @@ outputs/llm_driver_instructions.md
 outputs/llm_operations_report.md
 outputs/llm_improvement_suggestions.md
 ```
-
----
-
-## Observação sobre LLM
-
-A integração usa **Ollama + Llama 3.2** localmente. Não há uso de OpenAI, chave de API ou serviço pago.

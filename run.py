@@ -6,7 +6,7 @@ from src.charts import plot_fitness_history, plot_priority_distribution, plot_ve
 from src.data_loader import load_deliveries, load_vehicles
 from src.llm_service import generate_ollama_outputs, generate_rule_based_driver_file
 from src.map_visualizer import create_routes_map
-from src.qa_service import answer_question, answer_question_with_llm, load_payload
+from src.qa_service import answer_question_with_llm, load_payload
 from src.report_generator import build_routes_payload, generate_markdown_report, save_routes_json
 from src.vrp_solver import VRPSolver
 
@@ -49,10 +49,11 @@ def parse_args() -> argparse.Namespace:
     report_parser.add_argument("--output-dir", default="outputs", help="Pasta onde os relatórios da LLM serão salvos.")
     add_llm_arguments(report_parser)
 
-    ask_parser = subparsers.add_parser("ask", help="Responde perguntas sobre rotas usando regras locais ou LLM.")
+    ask_parser = subparsers.add_parser("ask", help="Responde perguntas sobre rotas usando LLM local via Ollama.")
     ask_parser.add_argument("question", help="Pergunta em linguagem natural sobre as rotas.")
     ask_parser.add_argument("--routes", default="outputs/routes.json", help="Arquivo JSON gerado pela otimização.")
-    add_llm_arguments(ask_parser)
+    ask_parser.add_argument("--llm-model", default="llama3.2", help="Modelo local do Ollama, por exemplo llama3.2.")
+    ask_parser.add_argument("--ollama-url", default="http://localhost:11434", help="URL local da API do Ollama.")
 
     menu_parser = subparsers.add_parser("menu", help="Abre um menu interativo para demonstração local.")
     add_optimization_arguments(menu_parser)
@@ -127,12 +128,10 @@ def generate_llm_reports(routes_path: str | Path, output_dir: str | Path, model:
     print("Relatórios com LLM gerados.")
 
 
-def ask_about_routes(question: str, routes_path: str | Path, use_llm: bool, model: str, ollama_url: str) -> str:
-    """Responde uma pergunta sobre as rotas usando regras locais ou LLM, conforme a opção escolhida."""
+def ask_about_routes(question: str, routes_path: str | Path, model: str, ollama_url: str) -> str:
+    """Responde uma pergunta sobre as rotas usando exclusivamente a LLM local via Ollama."""
     payload = load_payload(routes_path)
-    if use_llm:
-        return answer_question_with_llm(question, payload, model=model, base_url=ollama_url)
-    return answer_question(question, payload)
+    return answer_question_with_llm(question, payload, model=model, base_url=ollama_url)
 
 
 def run_interactive_menu(args: argparse.Namespace) -> None:
@@ -144,16 +143,15 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
         print("\n=== Sistema de Otimização de Rotas Hospitalares ===")
         print("1 - Executar Algoritmo Genético e gerar artefatos")
         print("2 - Gerar relatórios com LLM local (Ollama)")
-        print("3 - Perguntar sobre as rotas sem LLM")
-        print("4 - Perguntar sobre as rotas com LLM local (Ollama)")
-        print("5 - Sair")
+        print("3 - Perguntar sobre as rotas com LLM local (Ollama)")
+        print("4 - Sair")
         option = input("Escolha uma opção: ").strip()
 
         if option == "1":
             run_optimization(args)
         elif option == "2":
             generate_llm_reports(routes_path, output_dir, args.llm_model, args.ollama_url)
-        elif option in {"3", "4"}:
+        elif option == "3":
             question = input("Digite sua pergunta: ").strip()
             if not question:
                 print("Pergunta vazia. Tente novamente.")
@@ -161,13 +159,12 @@ def run_interactive_menu(args: argparse.Namespace) -> None:
             response = ask_about_routes(
                 question=question,
                 routes_path=routes_path,
-                use_llm=(option == "4"),
                 model=args.llm_model,
                 ollama_url=args.ollama_url,
             )
-            print("\nResposta:")
+            print("\nResposta da LLM:")
             print(response)
-        elif option == "5":
+        elif option == "4":
             print("Encerrando.")
             break
         else:
@@ -183,7 +180,7 @@ def main() -> None:
     elif args.command == "llm-report":
         generate_llm_reports(args.routes, args.output_dir, args.llm_model, args.ollama_url)
     elif args.command == "ask":
-        print(ask_about_routes(args.question, args.routes, args.llm, args.llm_model, args.ollama_url))
+        print(ask_about_routes(args.question, args.routes, args.llm_model, args.ollama_url))
     elif args.command == "menu":
         run_interactive_menu(args)
 

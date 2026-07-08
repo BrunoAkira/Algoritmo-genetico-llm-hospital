@@ -10,8 +10,6 @@ O projeto implementa um sistema local para otimização de rotas hospitalares. O
 
 Cada indivíduo representa uma solução completa de roteamento.
 
-Exemplo conceitual:
-
 ```python
 [
     [1, 4, 7],      # rota do veículo 1
@@ -21,8 +19,6 @@ Exemplo conceitual:
 ```
 
 Cada número representa uma entrega. Cada lista interna representa uma rota de veículo.
-
-Essa representação permite sair do TSP simples e trabalhar com VRP.
 
 ---
 
@@ -34,9 +30,7 @@ A seleção é feita por torneio. Alguns indivíduos são sorteados e o de menor
 
 ### Crossover
 
-O crossover usa uma adaptação do OX (Order Crossover). Primeiro, as rotas são transformadas em uma sequência única de entregas. Depois, uma parte da sequência vem de um pai e o restante é preenchido com a ordem do outro pai.
-
-Após isso, a sequência é dividida novamente entre os veículos.
+O crossover usa uma adaptação do OX. As rotas são transformadas em uma sequência única de entregas, uma parte da sequência vem de um pai e o restante é preenchido com a ordem do outro pai.
 
 ### Mutação
 
@@ -48,19 +42,13 @@ O projeto usa mutações para manter diversidade:
 
 ### Reparo
 
-Após crossover e mutação, o reparo garante que:
-
-- nenhuma entrega seja duplicada;
-- nenhuma entrega seja perdida;
-- todas as entregas apareçam exatamente uma vez.
+Após crossover e mutação, o reparo garante que nenhuma entrega seja duplicada ou perdida.
 
 ---
 
 ## Função fitness
 
 A função fitness calcula o custo de cada solução. Quanto menor o custo, melhor a solução.
-
-Componentes principais:
 
 ```text
 fitness =
@@ -86,10 +74,9 @@ Principais modos:
 ```bash
 python run.py
 python run.py optimize
-python run.py optimize --llm
-python run.py llm-report
-python run.py ask "Pergunta sobre as rotas"
-python run.py ask "Pergunta sobre as rotas" --llm
+python run.py optimize --llm --llm-model llama3.2
+python run.py llm-report --llm-model llama3.2
+python run.py ask "Pergunta sobre as rotas" --llm-model llama3.2
 python run.py menu
 ```
 
@@ -106,8 +93,8 @@ O sistema gera:
 - `fitness_evolution.png`: evolução do fitness;
 - `vehicle_distance.png`: distância por veículo;
 - `priority_distribution.png`: distribuição das prioridades;
-- `daily_report.md`: relatório operacional por regras;
-- `driver_instructions.md`: instruções locais para motoristas;
+- `daily_report.md`: relatório técnico local;
+- `driver_instructions.md`: instruções determinísticas para motoristas;
 - `performance_comparison.md`: comparação entre Algoritmo Genético e heurística gulosa.
 
 ---
@@ -120,7 +107,7 @@ Arquivos principais:
 
 - `src/prompts.py`: contém os prompts;
 - `src/llm_service.py`: comunica com o Ollama;
-- `src/qa_service.py`: responde perguntas com regras locais ou LLM;
+- `src/qa_service.py`: encaminha perguntas para a LLM;
 - `run.py`: centraliza os comandos de relatório e perguntas.
 
 A chamada ao Ollama é feita para:
@@ -166,4 +153,4 @@ Os testes ficam em `tests/` e podem ser executados com:
 pytest -q
 ```
 
-Eles validam carregamento dos dados, operadores genéticos, fitness, prompts, perguntas locais, funções do `run.py` e comparativo de desempenho.
+Eles validam carregamento dos dados, operadores genéticos, fitness, prompts, funções do `run.py`, delegação para a LLM e comparativo de desempenho.
