@@ -3,6 +3,7 @@ from pathlib import Path
 from src.data_loader import load_deliveries, load_vehicles
 from src.vrp_solver import VRPSolver
 from src.report_generator import build_routes_payload, save_routes_json, generate_markdown_report
+from src.baseline import generate_performance_comparison
 from src.map_visualizer import create_routes_map
 from src.charts import plot_fitness_history, plot_vehicle_distances, plot_priority_distribution
 from src.llm_service import generate_ollama_outputs, generate_rule_based_driver_file
@@ -54,6 +55,15 @@ def main() -> None:
 
     # Sempre gera um arquivo de instruções por regras para que o projeto funcione sem dependências externas.
     generate_rule_based_driver_file(payload, output_dir / "driver_instructions.md")
+
+    # Gera um comparativo com uma heurística simples, requisito importante para analisar desempenho.
+    generate_performance_comparison(
+        ga_individual=best_individual,
+        ga_cost=best_cost,
+        deliveries=deliveries,
+        vehicles=vehicles,
+        output_path=output_dir / "performance_comparison.md",
+    )
 
     if args.use_llm:
         # Quando habilitado, este bloco atende ao requisito de utilizar uma LLM pré-treinada.

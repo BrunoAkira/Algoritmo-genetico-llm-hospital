@@ -1,61 +1,45 @@
-# Otimizador de Rotas Médicas com Algoritmo Genético + LLM Local
+# Sistema de Otimização de Rotas Hospitalares com AG + LLM Local
 
-Projeto local em Python para otimizar rotas de entrega de medicamentos e insumos usando **Algoritmo Genético**. O projeto evolui o problema do **TSP** para um cenário mais realista de **VRP — Vehicle Routing Problem**, com múltiplos veículos, capacidade, autonomia e prioridades médicas.
+Este projeto otimiza rotas de entrega de **medicamentos e insumos hospitalares** usando um **Algoritmo Genético**. Ele parte do problema do **Caixeiro Viajante (TSP)** e evolui para um cenário de **VRP — Vehicle Routing Problem**, com múltiplos veículos, capacidade, autonomia e prioridades de entrega.
 
-O sistema **não possui frontend**. Ele roda pelo terminal e gera arquivos na pasta `outputs/`.
+A parte de LLM é feita com **Ollama**, rodando localmente. Assim, o projeto usa uma LLM pré-treinada sem API paga, sem chave da OpenAI e sem cartão de crédito.
 
----
-
-## Requisitos atendidos
-
-- Representação genética de rotas para múltiplos veículos;
-- Seleção por torneio;
-- Crossover especializado para roteamento;
-- Mutações por troca, inversão e movimentação entre veículos;
-- Fitness com penalidades por:
-  - distância total;
-  - prioridade médica;
-  - atraso projetado;
-  - excesso de capacidade;
-  - excesso de autonomia;
-  - uso dos veículos;
-- Visualização das rotas em mapa HTML com Folium;
-- Gráficos com Matplotlib;
-- Relatórios em Markdown;
-- Integração com **LLM pré-treinada local via Ollama**, sem API paga;
-- Perguntas em linguagem natural sobre as rotas.
+O projeto não possui frontend. Ele roda pelo terminal e gera arquivos em `outputs/`.
 
 ---
 
-## Arquivos gerados
+## 1. Pré-requisitos
 
-Após executar o projeto, os principais arquivos ficam em `outputs/`:
+- Python 3.11 recomendado;
+- Git Bash, PowerShell ou terminal equivalente;
+- Ollama instalado apenas se você quiser testar a parte de LLM.
 
-```text
-outputs/
-  routes.json                       # Resultado estruturado das rotas
-  routes_map.html                   # Mapa interativo das rotas
-  daily_report.md                   # Relatório operacional por regras locais
-  driver_instructions.md            # Instruções por regras locais
-  fitness_evolution.png             # Evolução do fitness
-  vehicle_distance.png              # Distância por veículo
-  priority_distribution.png         # Distribuição de prioridades
-  llm_driver_instructions.md        # Instruções geradas pela LLM local
-  llm_operations_report.md          # Relatório gerado pela LLM local
-  llm_improvement_suggestions.md    # Sugestões geradas pela LLM local
-```
-
-Os arquivos com prefixo `llm_` só são gerados quando o Ollama está habilitado.
-
----
-
-## Instalação Python
-
-Recomendado: Python 3.11.
+Verifique o Python:
 
 ```bash
+py -3.11 --version
+```
+
+---
+
+## 2. Instalação local
+
+No Windows com Git Bash:
+
+```bash
+cd ~/Downloads/Algoritmo-genetico-llm-hospital
 py -3.11 -m venv .venv
-.venv\Scripts\activate
+source .venv/Scripts/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+No PowerShell:
+
+```powershell
+cd $HOME\Downloads\Algoritmo-genetico-llm-hospital
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -63,6 +47,7 @@ pip install -r requirements.txt
 No Linux/Mac:
 
 ```bash
+cd ~/Downloads/Algoritmo-genetico-llm-hospital
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -71,51 +56,113 @@ pip install -r requirements.txt
 
 ---
 
-## Como rodar sem LLM
+## 3. Rodar somente o Algoritmo Genético
 
-Este modo executa o Algoritmo Genético, gera mapa, gráficos e relatórios básicos.
+Este comando executa a otimização, gera mapa, gráficos, JSON e relatórios locais sem LLM:
 
 ```bash
-py -3.11 run.py
+python run.py
 ```
 
-Com parâmetros:
+Com parâmetros opcionais:
 
 ```bash
-py -3.11 run.py --generations 500 --population-size 150 --seed 42
+python run.py --generations 500 --population-size 150 --mutation-rate 0.30 --seed 42
+```
+
+Arquivos gerados:
+
+```text
+outputs/routes.json
+outputs/routes_map.html
+outputs/fitness_evolution.png
+outputs/vehicle_distance.png
+outputs/priority_distribution.png
+outputs/daily_report.md
+outputs/driver_instructions.md
+outputs/performance_comparison.md
 ```
 
 ---
 
-## Como usar LLM gratuita com Ollama
+## 4. Visualizar os resultados
 
-A integração com LLM foi feita com **Ollama**, que permite rodar modelos pré-treinados localmente, sem OpenAI, sem cartão e sem API paga.
+Abrir o mapa no Windows:
 
-### 1. Instale o Ollama
+```bash
+start outputs/routes_map.html
+```
 
-Baixe em: https://ollama.com
+Abrir relatórios Markdown no VS Code:
 
-### 2. Baixe um modelo local
+```bash
+code outputs/daily_report.md
+code outputs/driver_instructions.md
+outputs/performance_comparison.md
+```
 
-Sugestão leve:
+No VS Code, use `Ctrl + Shift + V` para abrir o preview do Markdown.
+
+Abrir os gráficos:
+
+```bash
+start outputs/fitness_evolution.png
+start outputs/vehicle_distance.png
+start outputs/priority_distribution.png
+```
+
+---
+
+## 5. Configurar a LLM local com Ollama
+
+Instale o Ollama pelo site oficial:
+
+```text
+https://ollama.com/download
+```
+
+Feche e abra o terminal depois da instalação. Em seguida, teste:
+
+```bash
+ollama --version
+```
+
+Baixe um modelo pré-treinado:
 
 ```bash
 ollama pull llama3.2
 ```
 
-ou:
+Teste o modelo:
 
 ```bash
 ollama run llama3.2
 ```
 
-### 3. Execute o projeto com LLM
+Digite uma mensagem simples. Para sair:
 
-```bash
-py -3.11 run.py --use-llm --llm-model llama3.2
+```text
+/bye
 ```
 
-Esse comando gera também:
+Se o Git Bash não encontrar o comando `ollama`, adicione o caminho ao PATH temporariamente:
+
+```bash
+export PATH="$PATH:/c/Users/bruno/AppData/Local/Programs/Ollama"
+ollama --version
+```
+
+---
+
+## 6. Rodar o projeto com LLM
+
+Depois de instalar o Ollama e baixar o modelo, rode:
+
+```bash
+python run.py --use-llm --llm-model llama3.2
+```
+
+Esse comando executa o Algoritmo Genético e também gera os arquivos da LLM:
 
 ```text
 outputs/llm_driver_instructions.md
@@ -123,99 +170,95 @@ outputs/llm_operations_report.md
 outputs/llm_improvement_suggestions.md
 ```
 
-### 4. Gerar relatórios LLM depois do run.py
-
-Se você já rodou o algoritmo e já tem `outputs/routes.json`, pode gerar só os relatórios da LLM:
+Também é possível gerar somente os relatórios da LLM depois de já ter executado `run.py`:
 
 ```bash
-py -3.11 llm_report.py --model llama3.2
+python llm_report.py --model llama3.2
 ```
 
 ---
 
-## Perguntas em linguagem natural
+## 7. Fazer perguntas sobre as rotas
 
-### Modo simples sem LLM
-
-```bash
-py -3.11 ask.py "Qual veículo percorreu a maior distância?"
-py -3.11 ask.py "Alguma rota ultrapassou a autonomia?"
-py -3.11 ask.py "Quais entregas críticas foram priorizadas?"
-```
-
-### Modo com LLM local
+Modo local, sem LLM:
 
 ```bash
-py -3.11 ask.py "Qual rota tem maior risco operacional e por quê?" --llm --model llama3.2
+python ask.py "Qual veículo percorreu a maior distância?"
+python ask.py "Alguma rota ultrapassou a autonomia?"
+python ask.py "Quais entregas críticas foram priorizadas?"
 ```
 
-No modo `--llm`, a pergunta é enviada para o modelo local do Ollama junto com o conteúdo de `outputs/routes.json`.
+Modo com LLM local via Ollama:
 
----
-
-## Fluxo do sistema
-
-```text
-run.py
-  ↓
-Carrega data/deliveries.csv e data/vehicles.csv
-  ↓
-Cria a população inicial do Algoritmo Genético
-  ↓
-Avalia cada indivíduo com a função fitness
-  ↓
-Aplica seleção, crossover e mutação
-  ↓
-Encontra a melhor solução de rotas
-  ↓
-Gera mapa, gráficos, JSON e relatórios locais
-  ↓
-Opcional: envia routes.json para LLM local via Ollama
-  ↓
-Gera instruções, relatório operacional e sugestões de melhoria
+```bash
+python ask.py "Qual rota tem maior risco operacional e por quê?" --llm --model llama3.2
+python ask.py "Sugira melhorias para reduzir atrasos nas entregas críticas" --llm --model llama3.2
 ```
 
 ---
 
-## Estrutura do projeto
+## 8. Rodar os testes automatizados
+
+```bash
+pytest -q
+```
+
+Os testes validam funcionalidades principais, como:
+
+- carregamento dos dados;
+- representação genética;
+- reparo de cromossomos inválidos;
+- penalização de capacidade/autonomia;
+- geração de prompts para a LLM;
+- perguntas locais sem LLM;
+- execução básica do solver;
+- comparativo com heurística de vizinho mais próximo.
+
+---
+
+## 9. Estrutura do projeto
 
 ```text
 .
-  run.py                    # Executa o fluxo completo
-  ask.py                    # Responde perguntas sobre as rotas
-  llm_report.py             # Gera relatórios LLM a partir de routes.json
-  requirements.txt
-  data/
-    deliveries.csv          # Entregas, prioridades, prazos e cargas
-    vehicles.csv            # Veículos, capacidade e autonomia
-  src/
-    models.py               # Classes de domínio
-    data_loader.py          # Leitura dos CSVs
-    distance.py             # Cálculo de distância e tempo
-    fitness.py              # Função fitness e penalidades
-    genetic_algorithm.py    # Seleção, crossover, mutação e evolução
-    vrp_solver.py           # Orquestra o Algoritmo Genético
-    map_visualizer.py       # Mapa HTML com Folium
-    charts.py               # Gráficos com Matplotlib
-    report_generator.py     # Relatórios locais em Markdown
-    prompts.py              # Prompts usados pela LLM
-    llm_service.py          # Integração com Ollama e fallback local
-    qa_service.py           # Perguntas por regras ou LLM
-  outputs/
-  tests/
+├── run.py                         # Executa o fluxo principal
+├── ask.py                         # Perguntas sobre rotas, com ou sem LLM
+├── llm_report.py                  # Gera relatórios com LLM a partir do routes.json
+├── requirements.txt               # Dependências Python
+├── data/
+│   ├── deliveries.csv             # Entregas, prioridades, prazos e cargas
+│   └── vehicles.csv               # Veículos, capacidade e autonomia
+├── docs/
+│   ├── arquitetura.md             # Fluxo e arquitetura do sistema
+│   └── documentacao_tecnica.md    # Explicação técnica dos módulos
+├── src/
+│   ├── models.py                  # Modelos de domínio
+│   ├── data_loader.py             # Leitura dos CSVs
+│   ├── distance.py                # Distância geográfica e tempo estimado
+│   ├── fitness.py                 # Função fitness e penalidades
+│   ├── genetic_algorithm.py       # Seleção, crossover, mutação e elitismo
+│   ├── vrp_solver.py              # Orquestra o AG
+│   ├── map_visualizer.py          # Mapa HTML com Folium
+│   ├── charts.py                  # Gráficos com Matplotlib
+│   ├── report_generator.py        # Relatórios locais
+│   ├── baseline.py                # Comparativo com heurística gulosa
+│   ├── prompts.py                 # Prompts enviados à LLM
+│   ├── llm_service.py             # Integração com Ollama
+│   └── qa_service.py              # Perguntas locais ou via LLM
+└── tests/
+    └── test_basic.py              # Testes automatizados
 ```
 
 ---
 
-## Observação importante sobre a LLM
+## 10. Observação sobre a LLM
 
-A LLM **não calcula as rotas**. Quem resolve o problema é o Algoritmo Genético.
+A LLM não calcula as rotas. O cálculo das rotas é feito pelo Algoritmo Genético.
 
-A LLM é usada para:
+A LLM interpreta o arquivo `outputs/routes.json` para:
 
 - gerar instruções detalhadas para motoristas;
-- criar relatórios operacionais;
+- criar relatório operacional;
 - sugerir melhorias;
 - responder perguntas em linguagem natural.
 
-Essa separação deixa a arquitetura mais correta: o AG otimiza, a LLM explica e interpreta.
+Essa separação deixa o projeto mais claro: o AG resolve o problema matemático e a LLM explica os resultados.
