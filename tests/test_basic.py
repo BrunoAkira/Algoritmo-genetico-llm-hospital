@@ -163,3 +163,80 @@ def test_baseline_comparison_file_is_generated(tmp_path):
     assert output_file.exists()
     assert "Comparativo de Desempenho" in content
     assert "Vizinho mais próximo" in content
+
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from run import ask_about_routes, generate_llm_reports, run_optimization
+
+
+def test_run_optimization_generates_main_outputs(tmp_path):
+    """Valida que o run.py centralizado executa a otimização e gera os principais arquivos."""
+    args = SimpleNamespace(
+        deliveries="data/deliveries.csv",
+        vehicles="data/vehicles.csv",
+        population_size=12,
+        generations=5,
+        elite_size=2,
+        mutation_rate=0.3,
+        seed=7,
+        output_dir=str(tmp_path),
+        llm=False,
+    )
+
+    payload = run_optimization(args)
+
+    assert "routes" in payload
+    assert (tmp_path / "routes.json").exists()
+    assert (tmp_path / "daily_report.md").exists()
+    assert (tmp_path / "driver_instructions.md").exists()
+    assert (tmp_path / "performance_comparison.md").exists()
+
+
+def test_run_ask_about_routes_without_llm(tmp_path):
+    """Garante que o modo de perguntas centralizado no run.py funciona sem LLM."""
+    payload = {
+        "total_cost": 100,
+        "routes": [
+            {
+                "vehicle_name": "Van 1",
+                "distance_km": 12,
+                "autonomy_excess_km": 0,
+                "capacity_excess_kg": 0,
+                "late_deliveries": 0,
+                "stops": [],
+            },
+            {
+                "vehicle_name": "Van 2",
+                "distance_km": 30,
+                "autonomy_excess_km": 0,
+                "capacity_excess_kg": 0,
+                "late_deliveries": 0,
+                "stops": [],
+            },
+        ],
+    }
+    output_file = tmp_path / "routes.json"
+    save_routes_json(payload, output_file)
+
+    response = ask_about_routes(
+        question="Qual veículo percorreu a maior distância?",
+        routes_path=output_file,
+        use_llm=False,
+        model="llama3.2",
+        ollama_url="http://localhost:11434",
+    )
+
+    assert "Van 2" in response
+
+
+def test_run_llm_report_delegates_to_ollama_service(tmp_path):
+    """Confirma que o run.py chama o serviço de LLM sem precisar conectar ao Ollama durante o teste."""
+    payload = {"total_cost": 100, "routes": []}
+    routes_file = tmp_path / "routes.json"
+    save_routes_json(payload, routes_file)
+
+    with patch("run.generate_ollama_outputs") as mocked_generate:
+        generate_llm_reports(routes_file, tmp_path, model="llama3.2", ollama_url="http://localhost:11434")
+
+    mocked_generate.assert_called_once()

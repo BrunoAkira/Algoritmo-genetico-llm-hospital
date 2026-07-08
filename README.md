@@ -1,8 +1,8 @@
-# Sistema de Otimização de Rotas Hospitalares com AG + LLM Local
+# Sistema de Otimização de Rotas Hospitalares com Algoritmo Genético e LLM Local
 
-Este projeto otimiza rotas de entrega de **medicamentos e insumos hospitalares** usando um **Algoritmo Genético**. Ele parte do problema do **Caixeiro Viajante (TSP)** e evolui para um cenário de **VRP — Vehicle Routing Problem**, com múltiplos veículos, capacidade, autonomia e prioridades de entrega.
+Este projeto otimiza rotas de entrega de **medicamentos e insumos hospitalares** usando um **Algoritmo Genético**. Ele parte do problema do **Caixeiro Viajante (TSP)** e evolui para um cenário de **VRP — Vehicle Routing Problem**, com múltiplos veículos, capacidade de carga, autonomia e prioridades de entrega.
 
-A parte de LLM é feita com **Ollama**, rodando localmente. Assim, o projeto usa uma LLM pré-treinada sem API paga, sem chave da OpenAI e sem cartão de crédito.
+A integração com LLM é feita com **Ollama**, rodando localmente. Dessa forma, o projeto usa uma LLM pré-treinada sem API paga, sem chave da OpenAI e sem cartão de crédito.
 
 O projeto não possui frontend. Ele roda pelo terminal e gera arquivos em `outputs/`.
 
@@ -12,7 +12,7 @@ O projeto não possui frontend. Ele roda pelo terminal e gera arquivos em `outpu
 
 - Python 3.11 recomendado;
 - Git Bash, PowerShell ou terminal equivalente;
-- Ollama instalado apenas se você quiser testar a parte de LLM.
+- Ollama instalado para testar a parte de LLM.
 
 Verifique o Python:
 
@@ -56,18 +56,28 @@ pip install -r requirements.txt
 
 ---
 
-## 3. Rodar somente o Algoritmo Genético
+## 3. Como rodar o projeto
 
-Este comando executa a otimização, gera mapa, gráficos, JSON e relatórios locais sem LLM:
+A partir desta versão, o projeto é executado por um único arquivo principal: **`run.py`**.
+
+### Opção A — rodar a otimização diretamente
 
 ```bash
 python run.py
 ```
 
+Esse comando executa o Algoritmo Genético e gera mapa, gráficos, JSON e relatórios locais sem LLM.
+
+Equivalente explícito:
+
+```bash
+python run.py optimize
+```
+
 Com parâmetros opcionais:
 
 ```bash
-python run.py --generations 500 --population-size 150 --mutation-rate 0.30 --seed 42
+python run.py optimize --generations 500 --population-size 150 --mutation-rate 0.30 --seed 42
 ```
 
 Arquivos gerados:
@@ -85,35 +95,78 @@ outputs/performance_comparison.md
 
 ---
 
-## 4. Visualizar os resultados
+### Opção B — rodar otimização e LLM no mesmo comando
 
-Abrir o mapa no Windows:
+Depois de instalar o Ollama e baixar o modelo, rode:
 
 ```bash
-start outputs/routes_map.html
+python run.py optimize --llm --llm-model llama3.2
 ```
 
-Abrir relatórios Markdown no VS Code:
+Esse comando executa o Algoritmo Genético e também gera arquivos produzidos pela LLM:
 
-```bash
-code outputs/daily_report.md
-code outputs/driver_instructions.md
-outputs/performance_comparison.md
-```
-
-No VS Code, use `Ctrl + Shift + V` para abrir o preview do Markdown.
-
-Abrir os gráficos:
-
-```bash
-start outputs/fitness_evolution.png
-start outputs/vehicle_distance.png
-start outputs/priority_distribution.png
+```text
+outputs/llm_driver_instructions.md
+outputs/llm_operations_report.md
+outputs/llm_improvement_suggestions.md
 ```
 
 ---
 
-## 5. Configurar a LLM local com Ollama
+### Opção C — gerar apenas os relatórios da LLM depois da otimização
+
+Use esta opção quando `outputs/routes.json` já existe:
+
+```bash
+python run.py llm-report --llm-model llama3.2
+```
+
+Esse comando usa o resultado salvo pelo Algoritmo Genético e envia os dados para a LLM local via Ollama.
+
+---
+
+### Opção D — perguntar sobre as rotas
+
+Perguntas por regras locais, sem LLM:
+
+```bash
+python run.py ask "Qual veículo percorreu a maior distância?"
+python run.py ask "Alguma rota ultrapassou a autonomia?"
+python run.py ask "Quais entregas críticas foram priorizadas?"
+```
+
+Perguntas usando LLM local via Ollama:
+
+```bash
+python run.py ask "Qual rota tem maior risco operacional e por quê?" --llm --llm-model llama3.2
+python run.py ask "Sugira melhorias para reduzir atrasos nas entregas críticas" --llm --llm-model llama3.2
+```
+
+Essa funcionalidade atende ao requisito de permitir perguntas em linguagem natural sobre rotas e entregas.
+
+---
+
+### Opção E — menu interativo para apresentação
+
+```bash
+python run.py menu
+```
+
+O menu permite:
+
+```text
+1 - Executar Algoritmo Genético e gerar artefatos
+2 - Gerar relatórios com LLM local (Ollama)
+3 - Perguntar sobre as rotas sem LLM
+4 - Perguntar sobre as rotas com LLM local (Ollama)
+5 - Sair
+```
+
+Essa é a melhor opção para demonstrar o sistema em uma apresentação.
+
+---
+
+## 4. Configurar a LLM local com Ollama
 
 Instale o Ollama pelo site oficial:
 
@@ -154,50 +207,36 @@ ollama --version
 
 ---
 
-## 6. Rodar o projeto com LLM
+## 5. Visualizar os resultados
 
-Depois de instalar o Ollama e baixar o modelo, rode:
-
-```bash
-python run.py --use-llm --llm-model llama3.2
-```
-
-Esse comando executa o Algoritmo Genético e também gera os arquivos da LLM:
-
-```text
-outputs/llm_driver_instructions.md
-outputs/llm_operations_report.md
-outputs/llm_improvement_suggestions.md
-```
-
-Também é possível gerar somente os relatórios da LLM depois de já ter executado `run.py`:
+Abrir o mapa no Windows:
 
 ```bash
-python llm_report.py --model llama3.2
+start outputs/routes_map.html
+```
+
+Abrir relatórios Markdown no VS Code:
+
+```bash
+code outputs/daily_report.md
+code outputs/driver_instructions.md
+code outputs/performance_comparison.md
+code outputs/llm_operations_report.md
+```
+
+No VS Code, use `Ctrl + Shift + V` para abrir o preview do Markdown.
+
+Abrir os gráficos:
+
+```bash
+start outputs/fitness_evolution.png
+start outputs/vehicle_distance.png
+start outputs/priority_distribution.png
 ```
 
 ---
 
-## 7. Fazer perguntas sobre as rotas
-
-Modo local, sem LLM:
-
-```bash
-python ask.py "Qual veículo percorreu a maior distância?"
-python ask.py "Alguma rota ultrapassou a autonomia?"
-python ask.py "Quais entregas críticas foram priorizadas?"
-```
-
-Modo com LLM local via Ollama:
-
-```bash
-python ask.py "Qual rota tem maior risco operacional e por quê?" --llm --model llama3.2
-python ask.py "Sugira melhorias para reduzir atrasos nas entregas críticas" --llm --model llama3.2
-```
-
----
-
-## 8. Rodar os testes automatizados
+## 6. Rodar os testes automatizados
 
 ```bash
 pytest -q
@@ -208,21 +247,20 @@ Os testes validam funcionalidades principais, como:
 - carregamento dos dados;
 - representação genética;
 - reparo de cromossomos inválidos;
-- penalização de capacidade/autonomia;
-- geração de prompts para a LLM;
+- penalização de rotas inválidas;
+- geração de prompts para LLM;
 - perguntas locais sem LLM;
+- funções do `run.py`;
 - execução básica do solver;
 - comparativo com heurística de vizinho mais próximo.
 
 ---
 
-## 9. Estrutura do projeto
+## 7. Estrutura do projeto
 
 ```text
 .
-├── run.py                         # Executa o fluxo principal
-├── ask.py                         # Perguntas sobre rotas, com ou sem LLM
-├── llm_report.py                  # Gera relatórios com LLM a partir do routes.json
+├── run.py                         # Arquivo principal: otimização, LLM, perguntas e menu
 ├── requirements.txt               # Dependências Python
 ├── data/
 │   ├── deliveries.csv             # Entregas, prioridades, prazos e cargas
@@ -250,15 +288,21 @@ Os testes validam funcionalidades principais, como:
 
 ---
 
-## 10. Observação sobre a LLM
+## 8. Papel da LLM no projeto
 
-A LLM não calcula as rotas. O cálculo das rotas é feito pelo Algoritmo Genético.
+A LLM não calcula as rotas. O cálculo é feito pelo Algoritmo Genético.
 
-A LLM interpreta o arquivo `outputs/routes.json` para:
+A LLM interpreta `outputs/routes.json` para:
 
 - gerar instruções detalhadas para motoristas;
 - criar relatório operacional;
-- sugerir melhorias;
-- responder perguntas em linguagem natural.
+- sugerir melhorias no processo;
+- responder perguntas em linguagem natural sobre as entregas.
 
-Essa separação deixa o projeto mais claro: o AG resolve o problema matemático e a LLM explica os resultados.
+A integração é feita localmente via Ollama, usando o endpoint:
+
+```text
+http://localhost:11434/api/generate
+```
+
+Não há uso de OpenAI, chave de API ou serviço pago.
